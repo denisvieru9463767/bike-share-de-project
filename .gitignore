@@ -1,3 +1,13 @@
-cd
-pwd
-pwd
+# --- Airflow ---
+
+# Ignore the entire logs directory
+logs/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# --- Local Config ---
+
+# Ignore environment files
+.env

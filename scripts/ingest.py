@@ -3,18 +3,14 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 import logging
+import json
+import numpy as np  # Ensure numpy is imported
 
 # --- Setup ---
-# Set up basic logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-# Database Connection String
-# (Make sure your 'staging-db' container is running!)
 DB_URL = "postgresql://capstone_user:capstone_password@localhost:5433/staging_data"
-
-# API Endpoints for Citi Bike NYC
 INFO_URL = "https://gbfs.citibikenyc.com/gbfs/en/station_information.json"
 STATUS_URL = "https://gbfs.citibikenyc.com/gbfs/en/station_status.json"
 
@@ -26,30 +22,70 @@ except Exception as e:
     exit(1)
 
 
+def convert_complex_cols_to_json(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Finds object-type columns and converts any dict/list/array
+    values to JSON strings, passing others (str, int, nan) through.
+    """
+    
+    def convert_value_to_json(x):
+        """
+        Helper function for .apply()
+        Converts complex types to JSON, passes others through.
+        """
+        # Check for complex types first
+        if isinstance(x, (dict, list)):
+            return json.dumps(x)
+        
+        if isinstance(x, np.ndarray):
+            # Convert np.array to list, handling potential NaNs inside
+            # by converting them to None, which json.dumps() can handle.
+            list_data = [None if pd.isna(item) else item for item in x.tolist()]
+            return json.dumps(list_data)
+        
+        # Return all other types (str, int, float, None, np.nan) as-is.
+        # to_sql knows how to handle these (e.g., None/np.nan -> NULL).
+        return x
+
+    # Iterate over a copy of columns list to avoid issues while modifying
+    for col in list(df.columns):
+        if df[col].dtype == 'object':
+            # We must apply the conversion to *every* row in any
+            # object column, because the column could contain mixed types.
+            # We add a check to see if conversion is needed
+            # to avoid logging for simple string columns.
+            is_complex = df[col].dropna().apply(lambda x: isinstance(x, (dict, list, np.ndarray))).any()
+            
+            if is_complex:
+                logging.info(f"Converting complex column '{col}' to JSON string.")
+                df[col] = df[col].apply(convert_value_to_json)
+                
+    return df
+
+
 def fetch_and_load_station_info():
     """
     Fetches the static station information and loads it into the database.
-    This table is loaded with 'if_exists='replace'' because it's a
-    full refresh of dimension data.
     """
     try:
         logging.info(f"Fetching station information from {INFO_URL}...")
         response = requests.get(INFO_URL)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response.raise_for_status()
         data = response.json()
 
-        # Normalize the nested JSON data
         df = pd.json_normalize(data["data"]["stations"])
         logging.info(f"Successfully fetched and normalized {len(df)} stations.")
 
-        # Load the DataFrame into PostgreSQL
-        # We replace this table every time since it's a full snapshot
+        # --- FIX: Convert complex columns ---
+        df = convert_complex_cols_to_json(df)
+        # --- END FIX ---
+
         df.to_sql(
             "raw_station_info",
             con=engine,
             if_exists="replace",
             index=False,
-            method="multi",  # Efficiently inserts multiple rows
+            method="multi",
         )
         logging.info(
             "Successfully loaded station information into 'raw_station_info' table."
@@ -58,13 +94,12 @@ def fetch_and_load_station_info():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching data from API: {e}")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"An error occurred in fetch_and_load_station_info: {e}")
 
 
 def fetch_and_load_station_status():
     """
     Fetches the dynamic station status and appends it to the database.
-    This table is loaded with 'if_exists='append'' to build history.
     """
     try:
         logging.info(f"Fetching station status from {STATUS_URL}...")
@@ -72,18 +107,14 @@ def fetch_and_load_station_status():
         response.raise_for_status()
         data = response.json()
 
-        # Normalize the nested JSON data
         df = pd.json_normalize(data["data"]["stations"])
-
-        # --- THIS IS THE CRITICAL STEP ---
-        # Add a new column for the exact time of this fetch
         df["fetched_at"] = datetime.now()
-        # ---------------------------------
-
         logging.info(f"Successfully fetched {len(df)} station statuses.")
 
-        # Load the DataFrame into PostgreSQL
-        # We append this data to build a historical record
+        # --- FIX: Convert complex columns ---
+        df = convert_complex_cols_to_json(df)
+        # --- END FIX ---
+
         df.to_sql(
             "raw_station_status",
             con=engine,
@@ -98,14 +129,11 @@ def fetch_and_load_station_status():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching data from API: {e}")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"An error occurred in fetch_and_load_station_status: {e}")
 
 
 if __name__ == "__main__":
     logging.info("--- Starting Data Ingestion ---")
-    
-    # Run both for the first time to populate tables
     fetch_and_load_station_info()
     fetch_and_load_station_status()
-    
     logging.info("--- Data Ingestion Complete ---")
