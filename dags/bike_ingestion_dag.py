@@ -8,16 +8,10 @@ import numpy as np
 
 # Import the Airflow operators
 from airflow.decorators import dag, task
+# This is the import for our new operator
+from airflow.providers.snowflake.transfers.postgres_to_snowflake import PostgresToSnowflakeOperator
 
 # --- CRITICAL: DOCKER NETWORKING ---
-# This is the *most important* change.
-# When running from your PC, you used 'localhost:5433'.
-# When Airflow runs this (from inside a Docker container),
-# it must use the *service name* from docker-compose.yml and its *internal* port.
-#
-# Service name: 'staging-db'
-# Internal port: '5432'
-#
 DB_URL = "postgresql://capstone_user:capstone_password@staging-db:5432/staging_data"
 # -----------------------------------
 
@@ -31,7 +25,6 @@ logging.basicConfig(
 )
 
 # --- Helper Function (from our script) ---
-# This function is exactly the same as in your ingest.py
 def convert_complex_cols_to_json(df: pd.DataFrame) -> pd.DataFrame:
     def convert_value_to_json(x):
         if isinstance(x, (dict, list)):
@@ -50,8 +43,6 @@ def convert_complex_cols_to_json(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 # --- Airflow Task Definitions ---
-# The @task decorator turns a Python function into an Airflow task
-
 @task
 def extract_load_station_info():
     """
@@ -112,26 +103,50 @@ def extract_load_station_status():
         raise
 
 # --- DAG Definition ---
-# The @dag decorator defines the pipeline itself
-
 @dag(
     dag_id="bike_ingestion_pipeline",
-    start_date=datetime(2025, 11, 5),  # Use a date in the past
-    schedule="@hourly",       # Run once per hour
-    catchup=False,                     # Don't run for past intervals
+    start_date=datetime(2025, 11, 5),
+    schedule="@hourly",
+    catchup=False,
     tags=["capstone", "bike_share"],
 )
 def bike_ingestion_dag():
     """
-    DAG to fetch bike-share data for info and status, and load to Postgres.
+    DAG to fetch bike-share data, load to Postgres, and then copy to Snowflake.
     """
     
-    # This is how you call the tasks and set their order.
-    # Since these two tasks can run at the same time,
-    # we just call them. Airflow will run them in parallel.
-    
-    extract_load_station_info()
-    extract_load_station_status()
+    # --- Task 1: Ingest Info to Postgres ---
+    task_load_info_to_pg = extract_load_station_info()
+
+    # --- Task 2: Ingest Status to Postgres ---
+    task_load_status_to_pg = extract_load_station_status()
+
+    # --- Task 3: Copy Info from Postgres to Snowflake ---
+    task_load_info_pg_to_snow = PostgresToSnowflakeOperator(
+        task_id="load_info_pg_to_snow",
+        postgres_conn_id="postgres_staging_db", # The new connection we will create
+        snowflake_conn_id="snowflake_default",  # The connection you already made
+        sql="SELECT * FROM raw_station_info",
+        snowflake_table="RAW_STATION_INFO",
+        snowflake_stage="BIKE_STAGE",           # The stage we will create in Snowflake
+        snowflake_schema="BIKE_SHARE_RAW_DATA"  # Your schema in Snowflake
+    )
+
+    # --- Task 4: Copy Status from Postgres to Snowflake ---
+    task_load_status_pg_to_snow = PostgresToSnowflakeOperator(
+        task_id="load_status_pg_to_snow",
+        postgres_conn_id="postgres_staging_db",
+        snowflake_conn_id="snowflake_default",
+        sql="SELECT * FROM raw_station_status",
+        snowflake_table="RAW_STATION_STATUS",
+        snowflake_stage="BIKE_STAGE",
+        snowflake_schema="BIKE_SHARE_RAW_DATA"
+    )
+
+    # --- Set Dependencies ---
+    # Run the Snowflake copies *after* the Postgres loads are successful.
+    task_load_info_to_pg >> task_load_info_pg_to_snow
+    task_load_status_to_pg >> task_load_status_pg_to_snow
 
 # This final line "activates" the DAG
 bike_ingestion_dag()
