@@ -103,13 +103,12 @@ def load_pg_table_to_snowflake(
     """
     Simple ELT-style copy:
     - Read full table from Postgres (staging-db)
-    - Write to Snowflake table using SnowflakeHook + SQLAlchemy engine.
-    Requires:
-      - Connection 'postgres_staging_db' in Airflow (Postgres)
-      - Connection 'snowflake_default' in Airflow (Snowflake)
-      - snowflake-sqlalchemy + snowflake-connector-python installed
+    - Write to Snowflake table.
+
+    To avoid Snowflake+pandas reflection issues with if_exists='replace',
+    we handle DROP TABLE manually and always let pandas 'append'.
     """
-    # Read from Postgres
+    # 1) Read from Postgres
     pg = PostgresHook(postgres_conn_id="postgres_staging_db")
     df = pg.get_pandas_df(f"SELECT * FROM {pg_table}")
 
@@ -117,17 +116,28 @@ def load_pg_table_to_snowflake(
         logging.warning(f"No data found in {pg_table}; skipping load to Snowflake.")
         return
 
-    # Write to Snowflake
+    # 2) Connect to Snowflake
     sf = SnowflakeHook(snowflake_conn_id="snowflake_default")
     engine = sf.get_sqlalchemy_engine()
 
-    df.to_sql(
-        name=snowflake_table,
-        con=engine,
-        if_exists=if_exists,
-        index=False,
-        method="multi",
-    )
+    # 3) Handle replace/append logic safely
+    with engine.begin() as conn:
+        if if_exists == "replace":
+            # Explicitly drop; avoids pandas reflection bug
+            conn.execute(text(f'DROP TABLE IF EXISTS {snowflake_table}'))
+            target_if_exists = "append"
+        else:
+            target_if_exists = if_exists
+
+        # 4) Load data
+        df.to_sql(
+            name=snowflake_table,
+            con=conn,
+            if_exists=target_if_exists,
+            index=False,
+            method="multi",
+        )
+
     logging.info(
         f"Loaded {len(df)} rows from {pg_table} into Snowflake table {snowflake_table} "
         f"(if_exists={if_exists})."
