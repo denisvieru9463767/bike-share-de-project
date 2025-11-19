@@ -65,25 +65,81 @@ def extract_load_station_status():
 
 @task
 def load_pg_table_to_snowflake(pg_table: str, snowflake_table: str, if_exists: str = "replace"):
-    """
-    Postgres -> Snowflake:
-      - read dataframe from Postgres via PostgresHook
-      - write to Snowflake via SnowflakeHook SQLAlchemy engine
-    To avoid Snowflake+pandas reflection issues with if_exists='replace',
-    we DROP TABLE IF EXISTS ourselves, then always append.
-    """
-    # Read from Postgres
     pg = PostgresHook(postgres_conn_id="postgres_staging_db")
-    df = pg.get_pandas_df(f"SELECT * FROM {pg_table}")
-    if df.empty:
-        logging.warning(f"No data in {pg_table}; skipping Snowflake load.")
+    sf = SnowflakeHook(snowflake_conn_id="snowflake_default")
+    sf_engine = sf.get_sqlalchemy_engine()
+    pg_engine = pg.get_sqlalchemy_engine()
+
+    target_upper = snowflake_table.upper()
+
+    if target_upper == "RAW_STATION_INFO":
+        logging.info(f"Full refresh of {snowflake_table} from {pg_table}")
+        df = pg.get_pandas_df(f"SELECT * FROM {pg_table}")
+        if df.empty:
+            logging.warning(f"No data in {pg_table}; skipping load to {snowflake_table}")
+            return
+        with sf_engine.begin() as conn:
+            conn.execute(text(f"DROP TABLE IF EXISTS {snowflake_table}"))
+            df.to_sql(
+                name=snowflake_table,
+                con=conn,
+                if_exists="append",
+                index=False,
+                method="multi",
+            )
+        logging.info(f"Loaded {len(df)} rows into {snowflake_table}")
         return
 
-    # Write to Snowflake
-    sf = SnowflakeHook(snowflake_conn_id="snowflake_default")
-    engine = sf.get_sqlalchemy_engine()
+    if target_upper == "RAW_STATION_STATUS":
+        logging.info(f"Incremental chunked load of {snowflake_table} from {pg_table}")
 
-    with engine.begin() as conn:
+        last_ts = None
+        try:
+            with sf.get_conn() as conn:
+                cur = conn.cursor()
+                cur.execute(f"SELECT MAX(fetched_at) FROM {snowflake_table}")
+                row = cur.fetchone()
+                last_ts = row[0] if row and row[0] is not None else None
+        except Exception as e:
+            logging.warning(f"Could not get max(fetched_at) from {snowflake_table}, assuming empty. Error: {e}")
+            last_ts = None
+
+        if last_ts is None:
+            query = text(f"SELECT * FROM {pg_table}")
+            params = {}
+        else:
+            query = text(f"SELECT * FROM {pg_table} WHERE fetched_at > :last_ts")
+            params = {"last_ts": last_ts}
+
+        total_loaded = 0
+        chunk_size = 20000
+
+        with sf_engine.begin() as sf_conn:
+            for chunk_df in pd.read_sql(query, con=pg_engine, params=params, chunksize=chunk_size):
+                if chunk_df.empty:
+                    continue
+                chunk_df.to_sql(
+                    name=snowflake_table,
+                    con=sf_conn,
+                    if_exists="append",
+                    index=False,
+                    method="multi",
+                )
+                total_loaded += len(chunk_df)
+
+        if total_loaded == 0:
+            logging.info(f"No new rows in {pg_table} since {last_ts}; nothing loaded into {snowflake_table}")
+        else:
+            logging.info(f"Loaded {total_loaded} new rows into {snowflake_table}")
+        return
+
+    logging.info(f"Default load for {snowflake_table} from {pg_table} with if_exists={if_exists}")
+    df = pg.get_pandas_df(f"SELECT * FROM {pg_table}")
+    if df.empty:
+        logging.warning(f"No data in {pg_table}; skipping load to {snowflake_table}")
+        return
+
+    with sf_engine.begin() as conn:
         if if_exists == "replace":
             conn.execute(text(f"DROP TABLE IF EXISTS {snowflake_table}"))
             target_if_exists = "append"
@@ -98,7 +154,7 @@ def load_pg_table_to_snowflake(pg_table: str, snowflake_table: str, if_exists: s
             method="multi",
         )
 
-    logging.info(f"Loaded {len(df)} rows from {pg_table} into {snowflake_table} (if_exists={if_exists}).")
+    logging.info(f"Loaded {len(df)} rows into {snowflake_table}")
 
 @dag(
     dag_id="bike_ingestion_pipeline",
