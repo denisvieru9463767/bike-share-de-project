@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: bike_share_raw
+    database: BIKE_SHARE_DB
+    schema: BIKE_SHARE_RAW_DATA
+    tables:
+      - name: RAW_STATION_INFO
+      - name: RAW_STATION_STATUS

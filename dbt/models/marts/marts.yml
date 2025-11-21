@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: dim_station
+    description: "One row per bike station from RAW_STATION_INFO."
+    columns:
+      - name: station_id
+        description: "Unique identifier of the station."
+        tests:
+          - not_null
+          - unique
+
+  - name: fct_station_status_hourly
+    description: "Hourly aggregated station status (bikes/docks availability)."
+    columns:
+      - name: station_id_hour_ts
+        description: "Surrogate key: station_id + hour_ts."
+        tests:
+          - not_null
+          - unique
+      - name: station_id
+        tests:
+          - not_null
+      - name: hour_ts
+        tests:
+          - not_null
