@@ -4,8 +4,6 @@
     
         
             
-	    
-	    
             
         
     
@@ -14,7 +12,9 @@
 
     merge into BIKE_SHARE_DB.BIKE_SHARE_ANALYTICS.fct_station_status_hourly as DBT_INTERNAL_DEST
         using BIKE_SHARE_DB.BIKE_SHARE_ANALYTICS.fct_station_status_hourly__dbt_tmp as DBT_INTERNAL_SOURCE
-        on ((DBT_INTERNAL_SOURCE.station_id_hour_ts = DBT_INTERNAL_DEST.station_id_hour_ts))
+        on (
+                DBT_INTERNAL_SOURCE.station_id_hour_ts = DBT_INTERNAL_DEST.station_id_hour_ts
+            )
 
     
     when matched then update set

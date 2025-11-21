@@ -2,11 +2,9 @@
   
     
 
-create or replace transient table BIKE_SHARE_DB.BIKE_SHARE_ANALYTICS.dim_station
-    
-    
-    
-    as (
+        create or replace transient table BIKE_SHARE_DB.BIKE_SHARE_ANALYTICS.dim_station
+         as
+        (
 
 select
     cast(station_id as varchar)      as station_id,
@@ -22,8 +20,6 @@ select
     eightd_has_key_dispenser,
     electric_bike_surcharge_waiver
 from BIKE_SHARE_DB.BIKE_SHARE_RAW_DATA.RAW_STATION_INFO
-    )
-;
-
-
+        );
+      
   

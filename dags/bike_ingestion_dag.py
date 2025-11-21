@@ -9,6 +9,7 @@ import numpy as np
 from airflow.decorators import dag, task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
+from airflow.operators.bash import BashOperator
 
 # --- CRITICAL: DOCKER NETWORKING ---
 DB_URL = "postgresql://capstone_user:capstone_password@staging-db:5432/staging_data"
@@ -156,6 +157,7 @@ def load_pg_table_to_snowflake(pg_table: str, snowflake_table: str, if_exists: s
 
     logging.info(f"Loaded {len(df)} rows into {snowflake_table}")
 
+
 @dag(
     dag_id="bike_ingestion_pipeline",
     start_date=datetime(2025, 11, 5),
@@ -177,8 +179,19 @@ def bike_ingestion_dag():
         snowflake_table="RAW_STATION_STATUS",
         if_exists="append",
     )
+    dbt_run = BashOperator(
+    task_id="dbt_run",
+    bash_command="cd /opt/airflow/dbt && dbt run --target dev",
+    )
+
+    dbt_test = BashOperator(
+        task_id="dbt_test",
+        bash_command="cd /opt/airflow/dbt && dbt test --target dev",
+    )
 
     info_pg >> info_to_snow
     status_pg >> status_to_snow
+
+    [info_to_snow, status_to_snow] >> dbt_run >> dbt_test
 
 bike_ingestion_dag()
