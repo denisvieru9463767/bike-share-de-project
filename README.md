@@ -12,6 +12,9 @@ Username: admin
 
 Password: admin
 
+## 📊 Dashboard Preview
+![NYC Bike Share Dashboard](assets/dashboard.png)
+
 ## 📖 Project Overview
 This project builds a scalable data pipeline to monitor the Operational Health of the NYC Citi Bike network. It moves data from raw JSON APIs to a polished executive dashboard, enabling stakeholders to identify "Critical Empty" (stockouts) and "Critical Full" (blocked docks) stations, and act on the hourly refreshed data.
 
@@ -66,6 +69,9 @@ Infrastructure: Docker Compose
 
 ## 🧩 Pipeline Details
 ### 1. Airflow DAG (bike_ingestion_pipeline)
+![Airflow DAG Graph](assets/airflow_pipeline.png)
+
+*Automated hourly ingestion and transformation pipeline.*
 The pipeline runs @hourly and consists of 4 major steps:
 
 Extract: Python tasks fetch station_information and station_status from the public API.
