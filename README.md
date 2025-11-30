@@ -51,7 +51,7 @@ flowchart LR
     classDef tool fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     class Postgres,SnowRaw,SnowAnalytics db;
     class Airflow,dbt,Superset tool;
-    ```
+```
 
 Technologies Used
 Orchestration: Apache Airflow 3.1.2 (Running in Docker)
