@@ -1,0 +1,31 @@
+services:
+  superset_db:
+    image: postgres:15
+    container_name: superset_db
+    restart: always
+    environment:
+      - POSTGRES_DB=superset
+      - POSTGRES_USER=superset
+      - POSTGRES_PASSWORD=superset
+    volumes:
+      - superset_db:/var/lib/postgresql/data
+
+  superset:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      container_name: superset
+      restart: always
+      ports:
+        - "8088:8088"
+      environment:
+        - SUPERSET_SECRET_KEY=this_is_not_secure_change_me
+        - SQLALCHEMY_DATABASE_URI=postgresql://superset:superset@superset_db:5432/superset
+        - SUPERSET_LOAD_EXAMPLES=no
+        - MAPBOX_API_KEY=pk.eyJ1IjoiZGVuaXN2aWVydTkzIiwiYSI6ImNtaWtuMTRyZjBiamMza3NkdnFxcGwzdWwifQ.kow4JGMuuZnQ_2cZAmrFTw
+      depends_on:
+        - superset_db
+
+volumes:
+  superset_db:
+
