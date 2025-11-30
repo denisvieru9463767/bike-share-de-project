@@ -26,7 +26,8 @@ Visualization: Custom Apache Superset dashboard with deck.gl geospatial maps and
 
 🏗️ Architecture
 
-```mermaid flowchart LR
+```mermaid 
+flowchart LR
     subgraph Ingestion
         API[GBFS API] -->|Extract| Airflow[Apache Airflow]
     end
@@ -49,11 +50,8 @@ Visualization: Custom Apache Superset dashboard with deck.gl geospatial maps and
     classDef db fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
     classDef tool fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     class Postgres,SnowRaw,SnowAnalytics db;
-    class Airflow,dbt,Superset tool;```
-
-(Recommended: Insert a diagram image here. For now, here is the text flow)
-
-GBFS API ➡️ Airflow (Python Operator) ➡️ Staging DB (Postgres) ➡️ Snowflake (Raw Layer) ➡️ dbt (Transformation) ➡️ Snowflake (Analytics Layer) ➡️ Superset Dashboard
+    class Airflow,dbt,Superset tool;
+    ```
 
 Technologies Used
 Orchestration: Apache Airflow 3.1.2 (Running in Docker)
