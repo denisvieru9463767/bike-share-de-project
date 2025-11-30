@@ -181,12 +181,12 @@ def bike_ingestion_dag():
     )
     dbt_run = BashOperator(
     task_id="dbt_run",
-    bash_command="cd /opt/airflow/dbt && dbt run --target dev",
+    bash_command="cd /opt/airflow/dbt && /opt/airflow/dbt_venv/bin/dbt run --target dev",
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command="cd /opt/airflow/dbt && dbt test --target dev",
+        bash_command="cd /opt/airflow/dbt && /opt/airflow/dbt_venv/bin/dbt run --target dev",
     )
 
     info_pg >> info_to_snow
