@@ -46,11 +46,6 @@ flowchart LR
         SnowAnalytics -->|Query| Superset[Apache Superset]
         User((User)) -->|View Dashboard| Superset
     end
-
-    classDef db fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef tool fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    class Postgres,SnowRaw,SnowAnalytics db;
-    class Airflow,dbt,Superset tool;
 ```
 
 Technologies Used
