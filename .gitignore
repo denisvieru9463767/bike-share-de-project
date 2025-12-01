@@ -6,3 +6,4 @@ dbt/target/
 target/
 logs/
 *.log
+LICENSE

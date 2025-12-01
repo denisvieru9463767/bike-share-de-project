@@ -8,12 +8,10 @@ Explore the interactive dashboard showcasing real-time station occupancy and sys
 
 Guest Credentials:
 
-Username: admin
+Username: guest
 
-Password: admin
+Password: Pass1234!
 
-## 📊 Dashboard Preview
-![NYC Bike Share Dashboard](assets/dashboard.png)
 
 ## 📖 Project Overview
 This project builds a scalable data pipeline to monitor the Operational Health of the NYC Citi Bike network. It moves data from raw JSON APIs to a polished executive dashboard, enabling stakeholders to identify "Critical Empty" (stockouts) and "Critical Full" (blocked docks) stations, and act on the hourly refreshed data.
@@ -22,6 +20,24 @@ This project builds a scalable data pipeline to monitor the Operational Health o
 As a revenue-driven bike share system, Citi Bike relies on high customer satisfaction and system reliability to retain subscribers and attract casual riders. A primary friction point for users is Station Imbalance: encountering empty stations when trying to rent a bike (stockout) or full stations when trying to return one (blocked return). These service failures directly impact revenue through lost rentals and customer churn.
 
 To mitigate this, operations teams must proactively rebalance the fleet. The core business objective is to maintain a "Normal" state across the network by identifying "Critically Full" (Blue) stations and redistributing inventory to "Critically Empty" (Red) stations. This dashboard provides real-time visibility into network health, enabling data-driven dispatching of rebalancing trucks to minimize service interruptions and maximize fleet utilization.
+
+## Main metrics
+- Capacity: Number of docks at the station.
+- Available Bikes: Number of bikes currently available for rent.
+- Occupancy: Number of docks occupied by bikes.
+- Occupancy Rate: Percentage of docks occupied by bikes.
+- Critical Normal: Stations with 11% - 89% capacity available.
+- Critical Empty: Stations with less than or equal to 10% capacity available.
+- Critical Full: Stations with more than or equal to 90% capacity occupied.
+
+## 📊 Dashboard Preview
+1.**FIRST THING TO DO:** On the Time Selector Chart >> Select the latest date & hour to see the current state of the bike share network.
+2.Station Occupany Status Chart >> Shows how many stations are in each status (Critical Empty, Normal, Critical Full). It is clickable and will filter the rest of the dashboard.
+3.Active Bike Stations Chart >> Total number of active bikes in the NYC CITI Bike network.
+4.Stations Breakdown Chart >> Shows the address of the stations and the exact metrics (capacity, available bikes, occupancy and occupancy rate).
+5.Geospatial Distribution Map >> Shows the location and the size (number of docks) of the stations and the status (Red = Empty, Blue = Full, Green = Normal).
+![NYC Bike Share Dashboard](assets/dashboard.png)
+
 
 ## Key Features
 ELT Pipeline: Extracts data from the GBFS API, loads it into PostgreSQL (Staging) and Snowflake (Warehouse), and transforms it using dbt.
