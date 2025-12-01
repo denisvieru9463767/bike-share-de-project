@@ -1,8 +1,8 @@
 # 🚴‍♂️ NYC Bike Share Data Engineering Pipeline
-A robust, end-to-end data engineering solution that ingests, transforms, and visualizes real-time availability data from the NYC Citi Bike system.
+A robust, end-to-end data engineering solution that ingests, transforms, and visualizes **REAL WORLD** availability data from the NYC Citi Bike system. https://citibikenyc.com/
 
 ## 🔗 Live Demo
-Explore the interactive dashboard showcasing real-time station occupancy and system trends:
+Explore the interactive dashboard showcasing latest hourly data on station occupancy and system trends:
 
 ## 👉 https://unabatedly-avoidable-awilda.ngrok-free.dev
 
