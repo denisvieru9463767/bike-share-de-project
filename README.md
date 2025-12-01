@@ -74,6 +74,9 @@ flowchart LR
 ```
 
 ## Technologies Used
+
+Infrastructure: Docker Compose
+
 Orchestration: Apache Airflow 3.1.2 (Running in Docker)
 
 Transformation: dbt-core 1.7.10 (Isolated in Python Virtual Environment)
@@ -82,7 +85,7 @@ Warehouse: Snowflake (Azure Switzerland North Region)
 
 Visualization: Apache Superset (Custom Docker build with Snowflake drivers)
 
-Infrastructure: Docker Compose
+Demo Tunnel: ngrok (https://dashboard.ngrok.com/get-started/setup/macos)
 
 ## 🧩 Pipeline Details
 ### 1. Airflow DAG (bike_ingestion_pipeline)
@@ -108,51 +111,13 @@ fct_station_status_hourly: Incremental fact table storing hourly snapshots of bi
 
 Logic: Calculates occupancy_rate and assigns status buckets (Critical Empty, Normal, Critical Full).
 
-## 📊 Dashboard Highlights
-The Superset dashboard focuses on operational insights:
-
-Traffic Light Map: A deck.gl Scatterplot that color-codes stations by health (Red = Empty, Blue = Full, Green = Normal).
-
-Time Travel: A bar chart acting as a timeline scrubber; clicking a bar filters the map to that historical hour.
-
-Drill-down Table: Detailed list of stations requiring immediate rebalancing.
-
-## ⚙️ Setup & Installation
-Prerequisites
-Docker & Docker Compose
-
-Snowflake Account 
-
-Mapbox API Key (for Superset)
-
-### 1. Clone the Repository
-Bash
-
-git clone https://github.com/your-username/bike-share-de-project.git
-cd bike-share-de-project
-### 2. Configuration
-Create a .env file or export the following variables:
-
-Bash
-
-AIRFLOW_UID=50000
-SNOWFLAKE_ACCOUNT=your_account_id
-SNOWFLAKE_USER=airflow_service_user
-SNOWFLAKE_PASSWORD=your_password
-MAPBOX_API_KEY=pk.eyJ...
-### 3. Build & Run
-Bash
-
-docker-compose up --build -d
-### 4. Access Interfaces
-Airflow: http://localhost:8080 (User/Pass: airflow)
-
-Superset: http://localhost:8088 (User/Pass: admin)
 
 ## 🛠️ Technical Challenges Solved
 Dependency Hell: Resolved conflicting importlib requirements between Airflow and dbt by isolating dbt in a custom venv within the Dockerfile.
 
 Snowflake Security: Configured Key-Pair/Service User authentication to bypass mandatory MFA for automated pipeline tasks.
+
+DBT Incremental Model: Implemented incremental model to avoid duplicating data and to speed up the pipeline, thus saving money on snowflake credits.
 
 Geospatial Performance: Optimized Superset map rendering by implementing "Data Zoom" and row limiting to handle high-density NYC data without browser crashes.
 
