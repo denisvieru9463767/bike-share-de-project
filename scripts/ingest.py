@@ -4,9 +4,9 @@ from sqlalchemy import create_engine
 from datetime import datetime
 import logging
 import json
-import numpy as np  # Ensure numpy is imported
+import numpy as np 
 
-# --- Setup ---
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -33,27 +33,22 @@ def convert_complex_cols_to_json(df: pd.DataFrame) -> pd.DataFrame:
         Helper function for .apply()
         Converts complex types to JSON, passes others through.
         """
-        # Check for complex types first
+        
         if isinstance(x, (dict, list)):
             return json.dumps(x)
         
         if isinstance(x, np.ndarray):
-            # Convert np.array to list, handling potential NaNs inside
-            # by converting them to None, which json.dumps() can handle.
+            
             list_data = [None if pd.isna(item) else item for item in x.tolist()]
             return json.dumps(list_data)
         
-        # Return all other types (str, int, float, None, np.nan) as-is.
-        # to_sql knows how to handle these (e.g., None/np.nan -> NULL).
+       
         return x
 
-    # Iterate over a copy of columns list to avoid issues while modifying
+   
     for col in list(df.columns):
         if df[col].dtype == 'object':
-            # We must apply the conversion to *every* row in any
-            # object column, because the column could contain mixed types.
-            # We add a check to see if conversion is needed
-            # to avoid logging for simple string columns.
+           
             is_complex = df[col].dropna().apply(lambda x: isinstance(x, (dict, list, np.ndarray))).any()
             
             if is_complex:
@@ -76,9 +71,9 @@ def fetch_and_load_station_info():
         df = pd.json_normalize(data["data"]["stations"])
         logging.info(f"Successfully fetched and normalized {len(df)} stations.")
 
-        # --- FIX: Convert complex columns ---
+        
         df = convert_complex_cols_to_json(df)
-        # --- END FIX ---
+       
 
         df.to_sql(
             "raw_station_info",
@@ -111,9 +106,9 @@ def fetch_and_load_station_status():
         df["fetched_at"] = datetime.now()
         logging.info(f"Successfully fetched {len(df)} station statuses.")
 
-        # --- FIX: Convert complex columns ---
+        
         df = convert_complex_cols_to_json(df)
-        # --- END FIX ---
+       
 
         df.to_sql(
             "raw_station_status",

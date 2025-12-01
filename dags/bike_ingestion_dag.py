@@ -11,11 +11,8 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 from airflow.operators.bash import BashOperator
 
-# --- CRITICAL: DOCKER NETWORKING ---
 DB_URL = "postgresql://capstone_user:capstone_password@staging-db:5432/staging_data"
-# -----------------------------------
 
-# API Endpoints
 INFO_URL = "https://gbfs.citibikenyc.com/gbfs/en/station_information.json"
 STATUS_URL = "https://gbfs.citibikenyc.com/gbfs/en/station_status.json"
 

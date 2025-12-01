@@ -111,24 +111,23 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-    # This is your NEW, DEDICATED staging database
+    
   staging-db:
-    image: postgres:14-alpine  # Using a specific version is good practice
+    image: postgres:14-alpine  
     container_name: capstone_staging_db
     environment:
       - POSTGRES_USER=capstone_user
       - POSTGRES_PASSWORD=capstone_password
       - POSTGRES_DB=staging_data
     ports:
-      - "5433:5432"  # <-- IMPORTANT: Map to host port 5433 to avoid conflict
+      - "5433:5432"  
     volumes:
       - staging_db_data:/var/lib/postgresql/data
     networks:
       - default
 
   redis:
-    # Redis is limited to 7.2-bookworm due to licencing change
-    # https://redis.io/blog/redis-adopts-dual-source-available-licensing/
+    
     image: redis:7.2-bookworm
     expose:
       - 6379
