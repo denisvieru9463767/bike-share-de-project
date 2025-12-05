@@ -99,7 +99,7 @@ Extract: Python tasks fetch station_information and station_status from the publ
 Load 1: Data is staged in a local Postgres container.
 ![Postgres Staging DB](assets/postgres_staging_data.png)
 
-Load 2: Data is then ingested into Snowflake Dimensioanl and Fact tables.
+Load 2: Data is then ingested into Snowflake Dimensional and Fact tables.
 ![Snowflake Data Lake](assets/snowflake_data_lake.png)
 
 Technical Highlight: Uses a dedicated Service User in Snowflake to bypass MFA for automated ingestion.
