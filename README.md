@@ -45,7 +45,7 @@ ELT Pipeline: Extracts data from the GBFS API, loads it into PostgreSQL (Staging
 
 Orchestration: Apache Airflow schedules hourly ingestion jobs with robust dependency management.
 
-Data Modeling: Implements a Star Schema with Slowly Changing Dimensions (SCD) handling via dbt snapshots and incremental models.
+Data Modeling: Implements a Star Schema with Slowly Changing Dimensions (SCD) handling via dbt snapshots and incremental models. Snowflake was choosen for it's performance  as an OLAP engine powered DW versus traditional Postgres OLTP, where the staging data is stored. Using a DW with an OLAP engine speeds up significantly the querying from the BI tool perspective (Superset).
 
 Visualization: Custom Apache Superset dashboard with deck.gl geospatial maps and cross-filtering capabilities.
 
@@ -96,7 +96,11 @@ The pipeline runs @hourly and consists of 4 major steps:
 
 Extract: Python tasks fetch station_information and station_status from the public API.
 
-Load: Data is staged in a local Postgres container and then merged into Snowflake raw tables.
+Load 1: Data is staged in a local Postgres container.
+![Postgres Staging DB](assets/postgres_staging_data.png)
+
+Load 2: Data is then ingested into Snowflake Dimensioanl and Fact tables.
+![Snowflake Data Lake](assets/snowflake_data_lake.png)
 
 Technical Highlight: Uses a dedicated Service User in Snowflake to bypass MFA for automated ingestion.
 
