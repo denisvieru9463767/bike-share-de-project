@@ -37,7 +37,7 @@ To mitigate this, operations teams must proactively rebalance the fleet. The cor
 - Active Bike Stations Chart >> Total number of active bikes in the NYC CITI Bike network.
 - Stations Breakdown Chart >> Shows the address of the stations and the exact metrics (capacity, available bikes, occupancy and occupancy rate).
 - Geospatial Distribution Map >> Shows the location and the size (number of docks) of the stations and the status (Red = Empty, Blue = Full, Green = Normal).
-![NYC Bike Share Dashboard](assets/dashboard.png)
+![NYC Bike Share Dashboard](assets/dashboard1.png)
 
 
 ## Key Features
