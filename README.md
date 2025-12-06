@@ -89,7 +89,7 @@ Demo Tunnel: ngrok (https://dashboard.ngrok.com/get-started/setup/macos)
 
 ## 🧩 Pipeline Details
 ### 1. Airflow DAG (bike_ingestion_pipeline)
-![Airflow DAG Graph](assets/airflow_pipeline.png)
+![Airflow DAG Graph](assets/airflow.png)
 
 *Automated hourly ingestion and transformation pipeline.*
 The pipeline runs @hourly and consists of 4 major steps:
@@ -97,9 +97,10 @@ The pipeline runs @hourly and consists of 4 major steps:
 Extract: Python tasks fetch station_information and station_status from the public API.
 
 Load 1: Data is staged in a local Postgres container.
-![Postgres Staging DB](assets/postgres_staging_data.png)
+![Postgres Staging DB](assets/postgres_staging_data1.png)
 
 Load 2: Data is then ingested into ClickHouse analytical tables using `clickhouse-connect`.
+![ClickHouse Analytical DB](assets/clickhouse_analytics_data.png)
 
 Transform (dbt): Airflow triggers dbt run inside an isolated virtual environment to prevent dependency conflicts.
 
@@ -156,7 +157,6 @@ docker-compose up -d
 5. Access the services:
    - Airflow UI: http://localhost:8080 (credentials from .env)
    - ClickHouse HTTP: http://localhost:8123
-   - Metabase: http://localhost:3000
 
 ### Environment Variables
 
