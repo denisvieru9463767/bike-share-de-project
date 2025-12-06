@@ -41,11 +41,11 @@ To mitigate this, operations teams must proactively rebalance the fleet. The cor
 
 
 ## Key Features
-ELT Pipeline: Extracts data from the GBFS API, loads it into PostgreSQL (Staging) and Snowflake (Warehouse), and transforms it using dbt.
+ELT Pipeline: Extracts data from the GBFS API, loads it into PostgreSQL (Staging) and ClickHouse (Analytics Warehouse), and transforms it using dbt.
 
 Orchestration: Apache Airflow schedules hourly ingestion jobs with robust dependency management.
 
-Data Modeling: Implements a Star Schema with Slowly Changing Dimensions (SCD) handling via dbt snapshots and incremental models. Snowflake was choosen for it's performance  as an OLAP engine powered DW versus traditional Postgres OLTP, where the staging data is stored. Using a DW with an OLAP engine speeds up significantly the querying from the BI tool perspective (Superset).
+Data Modeling: Implements a Star Schema with incremental models via dbt. ClickHouse was chosen for its exceptional performance as a self-hosted OLAP engine, providing blazing-fast analytical queries compared to traditional PostgreSQL OLTP where the staging data is stored.
 
 Visualization: Custom Apache Superset dashboard with deck.gl geospatial maps and cross-filtering capabilities.
 
@@ -62,13 +62,13 @@ flowchart LR
     end
 
     subgraph Warehouse
-        Postgres -->|Load Raw| SnowRaw[(Snowflake\nRaw Layer)]
-        dbt[dbt Core] -->|Transform| SnowRaw
-        SnowRaw -->|Model| SnowAnalytics[(Snowflake\nAnalytics Layer)]
+        Postgres -->|Load Raw| CHRaw[(ClickHouse\nRaw Layer)]
+        dbt[dbt Core] -->|Transform| CHRaw
+        CHRaw -->|Model| CHAnalytics[(ClickHouse\nAnalytics Layer)]
     end
 
     subgraph Visualization
-        SnowAnalytics -->|Query| Superset[Apache Superset]
+        CHAnalytics -->|Query| Superset[Apache Superset]
         User((User)) -->|View Dashboard| Superset
     end
 ```
@@ -79,11 +79,11 @@ Infrastructure: Docker Compose
 
 Orchestration: Apache Airflow 3.1.2 (Running in Docker)
 
-Transformation: dbt-core 1.7.10 (Isolated in Python Virtual Environment)
+Transformation: dbt-core 1.7.10 with dbt-clickhouse adapter (Isolated in Python Virtual Environment)
 
-Warehouse: Snowflake (Azure Switzerland North Region)
+Warehouse: ClickHouse (Self-hosted via Docker)
 
-Visualization: Apache Superset (Custom Docker build with Snowflake drivers)
+Visualization: Apache Superset (Custom Docker build)
 
 Demo Tunnel: ngrok (https://dashboard.ngrok.com/get-started/setup/macos)
 
@@ -99,10 +99,7 @@ Extract: Python tasks fetch station_information and station_status from the publ
 Load 1: Data is staged in a local Postgres container.
 ![Postgres Staging DB](assets/postgres_staging_data.png)
 
-Load 2: Data is then ingested into Snowflake Dimensional and Fact tables.
-![Snowflake Data Lake](assets/snowflake_data_lake.png)
-
-Technical Highlight: Uses a dedicated Service User in Snowflake to bypass MFA for automated ingestion.
+Load 2: Data is then ingested into ClickHouse analytical tables using `clickhouse-connect`.
 
 Transform (dbt): Airflow triggers dbt run inside an isolated virtual environment to prevent dependency conflicts.
 
@@ -119,11 +116,51 @@ Logic: Calculates occupancy_rate and assigns status buckets (Critical Empty, Nor
 ## 🛠️ Technical Challenges Solved
 Dependency Hell: Resolved conflicting importlib requirements between Airflow and dbt by isolating dbt in a custom venv within the Dockerfile.
 
-Snowflake Security: Configured Key-Pair/Service User authentication to bypass mandatory MFA for automated pipeline tasks.
+Self-Hosted Analytics: Migrated from Snowflake to self-hosted ClickHouse, eliminating cloud warehouse costs while maintaining excellent OLAP performance.
 
-DBT Incremental Model: Implemented incremental model to avoid duplicating data and to speed up the pipeline, thus saving money on snowflake credits.
+DBT Incremental Model: Implemented incremental model with ClickHouse's ReplacingMergeTree engine to avoid duplicating data and speed up the pipeline.
 
 Geospatial Performance: Optimized Superset map rendering by implementing "Data Zoom" and row limiting to handle high-density NYC data without browser crashes.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Make (optional, for convenience commands)
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone <repo-url>
+cd bike-share-de-project
+```
+
+2. Create your environment file from the template:
+```bash
+cp .env.example .env
+# Edit .env with your credentials (change default passwords for production!)
+```
+
+3. Copy the dbt profile template:
+```bash
+cp dbt/profiles.yml.template ~/.dbt/profiles.yml
+```
+
+4. Build and start the services:
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+5. Access the services:
+   - Airflow UI: http://localhost:8080 (credentials from .env)
+   - ClickHouse HTTP: http://localhost:8123
+   - Metabase: http://localhost:3000
+
+### Environment Variables
+
+All credentials are managed via the `.env` file. See `.env.example` for the complete list of configurable variables. **Never commit your `.env` file to version control.**
 
 ## 📬 Contact
 Denis Vieru

@@ -24,3 +24,37 @@ models:
       - name: hour_ts
         tests:
           - not_null
+
+  - name: rpt_station_metrics
+    description: "Denormalized report combining station dimensions with hourly status metrics. Includes occupancy calculations and station status classification."
+    columns:
+      - name: station_id_hour_ts
+        description: "Surrogate key: station_id + hour_ts."
+        tests:
+          - not_null
+          - unique
+      - name: station_id
+        description: "Unique identifier of the station."
+        tests:
+          - not_null
+      - name: hour_ts
+        description: "Hourly timestamp of the status snapshot."
+        tests:
+          - not_null
+      - name: station_name
+        description: "Full name of the station."
+      - name: capacity
+        description: "Total number of docks at the station."
+      - name: available_bikes
+        description: "Average number of bikes available for rent during the hour."
+      - name: available_docks
+        description: "Average number of empty docks available for returns."
+      - name: occupancy
+        description: "Number of docks occupied by bikes (capacity - available_docks)."
+      - name: occupancy_rate
+        description: "Percentage of docks occupied by bikes (0-100)."
+      - name: station_status
+        description: "Station health classification: 'Critical Empty' (<=10%), 'Normal' (11-89%), 'Critical Full' (>=90%)."
+        tests:
+          - accepted_values:
+              values: ['Critical Empty', 'Normal', 'Critical Full']

@@ -2,8 +2,7 @@ version: 2
 
 sources:
   - name: bike_share_raw
-    database: BIKE_SHARE_DB
-    schema: BIKE_SHARE_RAW_DATA
+    schema: bike_share_db  # In ClickHouse, schema = database
     tables:
-      - name: RAW_STATION_INFO
-      - name: RAW_STATION_STATUS
+      - name: raw_station_info
+      - name: raw_station_status

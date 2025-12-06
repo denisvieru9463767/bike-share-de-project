@@ -2,7 +2,7 @@ name: "bike_share_project"
 version: "1.0.0"
 config-version: 2
 
-profile: "bike_share_snowflake"
+profile: "bike_share_clickhouse"
 
 model-paths: ["models"]
 

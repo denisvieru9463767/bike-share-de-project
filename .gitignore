@@ -61,6 +61,7 @@ env/
 # Logs
 # =========================
 logs/
+plugins/
 *.log
 dbt/logs/
 

@@ -1,7 +1,11 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='table',
+    engine='ReplacingMergeTree()',
+    order_by='station_id'
+) }}
 
 select
-    cast(station_id as varchar)      as station_id,
+    toString(station_id)              as station_id,
     name,
     short_name,
     region_id,
@@ -13,4 +17,4 @@ select
     external_id,
     eightd_has_key_dispenser,
     electric_bike_surcharge_waiver
-from {{ source('bike_share_raw', 'RAW_STATION_INFO') }}
+from {{ source('bike_share_raw', 'raw_station_info') }}

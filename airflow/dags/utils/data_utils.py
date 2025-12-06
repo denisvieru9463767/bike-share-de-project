@@ -12,7 +12,7 @@ def convert_complex_cols_to_json(df: pd.DataFrame) -> pd.DataFrame:
     Finds object-type columns and converts any dict/list/array
     values to JSON strings, passing others (str, int, nan) through.
     
-    This is necessary because PostgreSQL and Snowflake cannot store
+    This is necessary because PostgreSQL and ClickHouse cannot store
     nested Python objects directly - they must be serialized to JSON strings.
     
     Args:

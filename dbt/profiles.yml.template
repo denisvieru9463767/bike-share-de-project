@@ -1,0 +1,30 @@
+# ClickHouse dbt Profile Configuration
+# Copy this file to ~/.dbt/profiles.yml
+# All credentials are loaded from environment variables (see .env.example)
+
+bike_share_clickhouse:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      host: "{{ env_var('CLICKHOUSE_HOST', 'clickhouse') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT', '8123') | int }}"
+      user: "{{ env_var('CLICKHOUSE_USER') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
+      schema: "{{ env_var('CLICKHOUSE_DATABASE') }}"  # ClickHouse uses schema as database
+      secure: false                 # Set to true for HTTPS
+      verify: false
+      threads: 4
+      
+    # Production profile example
+    prod:
+      type: clickhouse
+      host: "{{ env_var('CLICKHOUSE_HOST') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT', '8123') | int }}"
+      user: "{{ env_var('CLICKHOUSE_USER') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
+      schema: "{{ env_var('CLICKHOUSE_DATABASE') }}"
+      secure: true
+      verify: true
+      threads: 4
+

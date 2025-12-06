@@ -14,13 +14,14 @@ dbt/
 │       ├── fct_station_status_hourly.sql
 │       └── marts.yml
 ├── dbt_project.yml        # Project configuration
+├── profiles.yml.template  # Profile template for ClickHouse
 └── README.md              # This file
 ```
 
 ## 🏗️ Models
 
 ### Staging Layer
-- **src_bike_share.yml**: Source definitions pointing to Snowflake raw tables
+- **src_bike_share.yml**: Source definitions pointing to ClickHouse raw tables
 
 ### Marts Layer
 - **dim_station**: Dimension table with static station metadata (capacity, name, location)
@@ -32,30 +33,26 @@ dbt/
 
 ### 1. Configure dbt Profile
 
-Create or update `~/.dbt/profiles.yml`:
+Copy the template to your dbt config directory:
 
-```yaml
-bike_share_snowflake:
-  target: dev
-  outputs:
-    dev:
-      type: snowflake
-      account: your_account.region
-      user: your_user
-      
-      # Option A: Password authentication
-      password: your_password
-      
-      # Option B: Key-pair authentication (recommended for automation)
-      # private_key_path: /path/to/your/private_key.p8
-      # private_key_passphrase: your_passphrase
-      
-      role: your_role
-      database: BIKE_SHARE
-      warehouse: COMPUTE_WH
-      schema: ANALYTICS
-      threads: 4
+```bash
+cp dbt/profiles.yml.template ~/.dbt/profiles.yml
 ```
+
+The profile uses environment variables for credentials. Make sure your `.env` file is configured:
+
+```bash
+# In your project root
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+Required environment variables:
+- `CLICKHOUSE_HOST` - ClickHouse hostname (default: `clickhouse` for Docker)
+- `CLICKHOUSE_PORT` - HTTP port (default: `8123`)
+- `CLICKHOUSE_USER` - Database user
+- `CLICKHOUSE_PASSWORD` - Database password
+- `CLICKHOUSE_DATABASE` - Database name
 
 ### 2. Test Connection
 
@@ -97,10 +94,10 @@ dbt docs serve
 ## 📊 Data Flow
 
 ```
-Snowflake Raw Layer          dbt Transformations         Analytics Layer
+ClickHouse Raw Layer         dbt Transformations         Analytics Layer
 ─────────────────────────────────────────────────────────────────────────
-RAW_STATION_INFO      →      dim_station            →    ANALYTICS.DIM_STATION
-RAW_STATION_STATUS    →      fct_station_status     →    ANALYTICS.FCT_STATION_STATUS_HOURLY
+raw_station_info      →      dim_station            →    dim_station
+raw_station_status    →      fct_station_status     →    fct_station_status_hourly
 ```
 
 ## 🔍 Key Metrics Calculated
@@ -119,7 +116,7 @@ RAW_STATION_STATUS    →      fct_station_status     →    ANALYTICS.FCT_STATI
 
 ### Connection Issues
 ```bash
-# Test Snowflake connection
+# Test ClickHouse connection
 dbt debug
 
 # Check for syntax errors
@@ -132,9 +129,16 @@ dbt parse
 dbt run --full-refresh --select fct_station_status_hourly
 ```
 
+### ClickHouse-Specific Tips
+
+- ClickHouse uses `ReplacingMergeTree()` engine for deduplication
+- Use `toStartOfHour()` instead of `date_trunc()`
+- Use `toString()` instead of `cast(x as varchar)`
+- Use `formatDateTime()` instead of `to_char()`
+
 ## 📚 Resources
 
 - [dbt Documentation](https://docs.getdbt.com/)
-- [dbt Snowflake Setup](https://docs.getdbt.com/reference/warehouse-profiles/snowflake-profile)
+- [dbt-clickhouse Adapter](https://github.com/ClickHouse/dbt-clickhouse)
+- [ClickHouse SQL Reference](https://clickhouse.com/docs/en/sql-reference)
 - [Incremental Models](https://docs.getdbt.com/docs/build/incremental-models)
-
