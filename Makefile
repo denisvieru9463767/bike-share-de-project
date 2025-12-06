@@ -26,8 +26,8 @@ init: ## Initialize the project (first-time setup)
 	@cp -n .env.example .env 2>/dev/null || echo ".env already exists"
 	@echo "Creating required directories..."
 	@mkdir -p logs plugins
-	@echo "Setting permissions..."
-	@echo "AIRFLOW_UID=$$(id -u)" >> .env
+	@echo "Setting AIRFLOW_UID..."
+	@grep -q "^AIRFLOW_UID=" .env 2>/dev/null || echo "AIRFLOW_UID=$$(id -u)" >> .env
 	@echo "Done! Please edit .env with your credentials."
 
 up: ## Start all services (Airflow, Postgres, Redis)
